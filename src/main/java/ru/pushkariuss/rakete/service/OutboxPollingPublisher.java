@@ -28,7 +28,7 @@ public class OutboxPollingPublisher {
     private final KafkaTemplate<String, String> kafkaTemplate;
 
     @Transactional
-    @Scheduled(fixedDelayString = "${outbox.polling.publisher.fixed.rate}")
+    @Scheduled(fixedDelayString = "${outbox.polling.publisher.fixed.delay}")
     public void pollAndPublishOutbox() {
         final List<Outbox> newOutboxRecords = outboxRepository.getNewOutboxRecords(batchSize);
         log.info("Got {} outbox messages in thread {}", newOutboxRecords.size(), Thread.currentThread());

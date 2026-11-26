@@ -20,7 +20,7 @@ public class OrderEventsDeduplicationRepository {
 
     @Value("${order.events.redis.deduplication.ttl}")
     private Duration dedupTtl;
-    @Value(("${order.events.redis.deduplication.processing.ttl}"))
+    @Value("${order.events.redis.deduplication.processing.ttl}")
     private Duration dedupProcessingTtl;
 
     private final StringRedisTemplate redisTemplate;

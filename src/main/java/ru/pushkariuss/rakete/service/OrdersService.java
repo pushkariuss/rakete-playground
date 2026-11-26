@@ -57,15 +57,18 @@ public class OrdersService {
         return orderCacheRepository.findById(orderId)
                 .or(() -> {
                     log.info("Cache miss for order {}, trying database...", orderId);
-
-                    Optional<OrderResponse> orderResponse = ordersRepository.findById(orderId)
-                            .map(this::createOrderResponse);
-                    orderResponse.ifPresentOrElse(o -> {
-                        log.info("Found an order {}, saving in cache", o.id());
-                        orderCacheRepository.save(o);
-                    }, () -> log.info("Not found an order {} in database", orderId));
-                    return orderResponse;
+                    return refreshOrderCache(orderId);
                 });
+    }
+
+    public Optional<OrderResponse> refreshOrderCache(UUID orderId) {
+        Optional<OrderResponse> orderResponse = ordersRepository.findById(orderId)
+                .map(this::createOrderResponse);
+        orderResponse.ifPresentOrElse(o -> {
+            log.info("Found an order {}, saving in cache", o.id());
+            orderCacheRepository.save(o);
+        }, () -> log.info("Not found an order {} in database", orderId));
+        return orderResponse;
     }
 
     private OrderCreatedEvent createOrderEvent(Order order) {

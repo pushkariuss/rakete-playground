@@ -50,8 +50,7 @@ public class OrderEventsListener {
         deduplicationRepository.setDone(eventId);
         log.info("Done processing order event id {}, order {}", eventId, event.orderId());
 
-        // refreshing cache
-        ordersService.getOrder(orderId);
+        ordersService.refreshOrderCache(orderId);
     }
 
 }
