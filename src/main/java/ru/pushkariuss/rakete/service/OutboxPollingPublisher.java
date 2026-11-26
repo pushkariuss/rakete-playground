@@ -4,23 +4,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.support.SendResult;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.pushkariuss.rakete.model.Outbox;
 import ru.pushkariuss.rakete.model.OutboxStatus;
 import ru.pushkariuss.rakete.repository.OutboxRepository;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 @Slf4j
 @Component
@@ -36,7 +28,7 @@ public class OutboxPollingPublisher {
     private final KafkaTemplate<String, String> kafkaTemplate;
 
     @Transactional
-    @Scheduled(fixedRateString = "${outbox.polling.publisher.fixed.rate}")
+    @Scheduled(fixedDelayString = "${outbox.polling.publisher.fixed.rate}")
     public void pollAndPublishOutbox() {
         final List<Outbox> newOutboxRecords = outboxRepository.getNewOutboxRecords(batchSize);
         log.info("Got {} outbox messages in thread {}", newOutboxRecords.size(), Thread.currentThread());

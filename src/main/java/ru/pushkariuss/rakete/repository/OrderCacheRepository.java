@@ -21,8 +21,6 @@ public class OrderCacheRepository {
 
     private static final String PREFIX = "order:";
 
-    @Value("${order.events.redis.deduplication.ttl}")
-    private Duration redisOrderEventKeyTtl;
     @Value("${order.response.redis.cache.ttl}")
     private Duration redisOrderCacheKeyTtl;
     @Value("${order.response.redis.cache.ttl.jitter}")
@@ -32,29 +30,33 @@ public class OrderCacheRepository {
     private final ObjectMapper objectMapper;
 
     public Optional<OrderResponse> findById(UUID orderId) {
-        final String value = redisTemplate.opsForValue().get(orderId.toString());
-        if(value == null) {
+        final String value = redisTemplate.opsForValue().get(generateKey(orderId));
+        if (value == null) {
             return Optional.empty();
         }
         try {
             return Optional.of(objectMapper.readValue(value, OrderResponse.class));
         } catch (JacksonException e) {
-           log.warn("Cannot deserialize cache value for order {}", orderId);
+            log.warn("Cannot deserialize cache value for order {}", orderId);
             return Optional.empty();
         }
     }
 
     public void save(OrderResponse order) {
         try {
-            final String value =  objectMapper.writeValueAsString(order);
+            final String value = objectMapper.writeValueAsString(order);
 
             final long upperBound = redisOrderCacheKeyTtlJitter.toMillis();
             final long jitterMillis = ThreadLocalRandom.current().nextLong(upperBound);
             final Duration ttlWithJitter = redisOrderCacheKeyTtl.plusMillis(jitterMillis);
 
-            redisTemplate.opsForValue().set(PREFIX + order.id(), value, ttlWithJitter);
+            redisTemplate.opsForValue().set(generateKey(order.id()), value, ttlWithJitter);
         } catch (JacksonException e) {
             log.error("Cannot serialize cache value for order {}", order.id());
         }
+    }
+
+    private String generateKey(UUID orderId) {
+        return PREFIX + orderId;
     }
 }

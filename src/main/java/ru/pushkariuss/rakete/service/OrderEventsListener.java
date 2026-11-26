@@ -4,12 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
-import ru.pushkariuss.rakete.controller.model.OrderResponse;
-import ru.pushkariuss.rakete.model.Order;
 import ru.pushkariuss.rakete.model.OrderCreatedEvent;
 import ru.pushkariuss.rakete.model.OrderStatus;
 import ru.pushkariuss.rakete.repository.DeduplicationStatus;
-import ru.pushkariuss.rakete.repository.OrderCacheRepository;
 import ru.pushkariuss.rakete.repository.OrderEventsDeduplicationRepository;
 import tools.jackson.databind.ObjectMapper;
 
@@ -21,7 +18,6 @@ import java.util.UUID;
 public class OrderEventsListener {
 
     private final ObjectMapper objectMapper;
-    private final OrderCacheRepository orderCacheRepository;
     private final OrderEventsDeduplicationRepository deduplicationRepository;
     private final OrdersService ordersService;
 
@@ -42,25 +38,20 @@ public class OrderEventsListener {
         }
 
         final UUID orderId = event.orderId();
-        final Order order;
         try {
             log.info("Processing order event id {}, order {}", eventId, event.orderId());
-            order = ordersService.markOrderProcessed(orderId);
+            ordersService.markOrderProcessed(orderId);
         } catch (Exception e) {
             log.warn("Failed to update status of the order {} to {}", orderId, OrderStatus.PROCESSED);
             deduplicationRepository.delete(eventId);
-            return;
+            throw e;
         }
 
         deduplicationRepository.setDone(eventId);
         log.info("Done processing order event id {}, order {}", eventId, event.orderId());
 
-        orderCacheRepository.save(new OrderResponse(
-                order.getId(),
-                order.getUserId(),
-                order.getAmount(),
-                order.getStatus()
-        ));
+        // refreshing cache
+        ordersService.getOrder(orderId);
     }
 
 }

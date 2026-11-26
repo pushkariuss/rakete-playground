@@ -48,13 +48,9 @@ public class OrdersService {
     }
 
     @Transactional
-    public Order markOrderProcessed(UUID orderId) {
-        final Order order = ordersRepository.findById(orderId).orElseThrow();
-        order.setStatus(OrderStatus.PROCESSED);
-
-        log.info("Marked order {} for user {} as {}", order.getId(), order.getUserId(), order.getStatus());
-
-        return order;
+    public void markOrderProcessed(UUID orderId) {
+        log.info("Marking order {} as {}", orderId, OrderStatus.PROCESSED);
+        ordersRepository.markProcessed(orderId);
     }
 
     public Optional<OrderResponse> getOrder(UUID orderId) {
